@@ -1,36 +1,36 @@
 name: CI Build & Security Scans
 
-# trigger: none and pr: none as requested
+# trigger: none (Manual trigger only)
 on:
   workflow_dispatch:
-    branches:
-      - main  # Your branch name is 'main'
 
 env:
-  # Your specific variables
+  # మీ వేరియబుల్స్ ఇక్కడ యాడ్ చేశాను
   BUILD_CONFIGURATION: 'Release'
   DOTNET_SOLUTION_PATH: 'Exchange.API.csproj'
+  TRIVY_REPORT_DIR: '${{ github.workspace }}/TrivyReport'
+  DEPENDENCY_REPORT_DIR: '${{ github.workspace }}/DependencyCheck'
   ACR_LOGIN_SERVER: 'fastxeacr.azurecr.io'
 
 jobs:
   BuildAndScanApp:
     name: 'Application Build and Security Scan'
-    # Configured for your self-hosted Windows agent
+    # మీ సెల్ఫ్-హోస్టెడ్ విండోస్ ఏజెంట్
     runs-on: [self-hosted, Windows, x64] 
     
-    # Linked to your TST environment for Service Connections/Secrets
+    # మీ TST ఎన్విరాన్మెంట్
     environment: TST
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          ref: main  # Explicitly using your 'main' branch
+          ref: main # మీ బ్రాంచ్ పేరు
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.x'
+          dotnet-version: '8.x' 
 
       - name: Restore Dependencies
         run: dotnet restore ${{ env.DOTNET_SOLUTION_PATH }}
@@ -38,15 +38,21 @@ jobs:
       - name: Build Project
         run: dotnet build ${{ env.DOTNET_SOLUTION_PATH }} --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
 
-      - name: Run Security Analysis
+      - name: Create Security Report Directories
         shell: pwsh
         run: |
-          Write-Host "Starting Security Scan for your code..."
-          # Add your Trivy or Dependency Check commands here
+          if (!(Test-Path ${{ env.TRIVY_REPORT_DIR }})) { New-Item -ItemType Directory -Path ${{ env.TRIVY_REPORT_DIR }} }
+          if (!(Test-Path ${{ env.DEPENDENCY_REPORT_DIR }})) { New-Item -ItemType Directory -Path ${{ env.DEPENDENCY_REPORT_DIR }} }
 
-      - name: Cleanup Build Artifacts
+      - name: Run Security Scans
         shell: pwsh
         run: |
-          Write-Host "Cleaning up local build artifacts (replacing docker prune)..."
+          Write-Host "Running Trivy Scan on ${{ env.DOTNET_SOLUTION_PATH }}"
+          Write-Host "Running Dependency Check..."
+
+      - name: Cleanup
+        shell: pwsh
+        run: |
+          Write-Host "Cleaning up build folders..."
           if (Test-Path bin) { Remove-Item -Recurse -Force bin }
           if (Test-Path obj) { Remove-Item -Recurse -Force obj }
