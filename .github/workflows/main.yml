@@ -4,19 +4,17 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch: # Allows manual run if needed
+  workflow_dispatch:
 
 env:
   BUILD_CONFIGURATION: 'Release'
   DOTNET_SOLUTION_PATH: 'Exchange.API.csproj'
-  TRIVY_REPORT_DIR: '${{ github.workspace }}/TrivyReport'
-  DEPENDENCY_REPORT_DIR: '${{ github.workspace }}/DependencyCheck'
-  ACR_LOGIN_SERVER: 'fastxeacr.azurecr.io'
+  TRIVY_REPORT_DIR: '${{ github.workspace }}\TrivyReport'
+  DEPENDENCY_REPORT_DIR: '${{ github.workspace }}\DependencyCheck'
 
 jobs:
   BuildAndScanApp:
     name: 'Application Build and Security Scan'
-    # Runs on your local machine: DESKTOP-BE1AC6Q
     runs-on: [self-hosted, Windows, x64] 
     
     environment: TST
@@ -27,8 +25,6 @@ jobs:
         with:
           ref: main
 
-      # Step removed: Setup .NET (Using the pre-installed version on your runner)
-
       - name: Restore Dependencies
         run: dotnet restore ${{ env.DOTNET_SOLUTION_PATH }}
 
@@ -36,19 +32,19 @@ jobs:
         run: dotnet build ${{ env.DOTNET_SOLUTION_PATH }} --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
 
       - name: Create Security Report Directories
-        shell: pwsh
+        shell: powershell
         run: |
-          if (!(Test-Path ${{ env.TRIVY_REPORT_DIR }})) { New-Item -ItemType Directory -Path ${{ env.TRIVY_REPORT_DIR }} }
-          if (!(Test-Path ${{ env.DEPENDENCY_REPORT_DIR }})) { New-Item -ItemType Directory -Path ${{ env.DEPENDENCY_REPORT_DIR }} }
+          if (!(Test-Path "${{ env.TRIVY_REPORT_DIR }}")) { New-Item -ItemType Directory -Path "${{ env.TRIVY_REPORT_DIR }}" -Force }
+          if (!(Test-Path "${{ env.DEPENDENCY_REPORT_DIR }}")) { New-Item -ItemType Directory -Path "${{ env.DEPENDENCY_REPORT_DIR }}" -Force }
 
       - name: Run Security Scans
-        shell: pwsh
+        shell: powershell
         run: |
           Write-Host "Running Trivy Scan on ${{ env.DOTNET_SOLUTION_PATH }}"
           Write-Host "Running Dependency Check..."
 
       - name: Cleanup
-        shell: pwsh
+        shell: powershell
         run: |
           Write-Host "Cleaning up build folders..."
           if (Test-Path bin) { Remove-Item -Recurse -Force bin }
