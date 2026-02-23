@@ -1,0 +1,52 @@
+name: CI Build & Security Scans
+
+# trigger: none and pr: none as requested
+on:
+  workflow_dispatch:
+    branches:
+      - main  # Your branch name is 'main'
+
+env:
+  # Your specific variables
+  BUILD_CONFIGURATION: 'Release'
+  DOTNET_SOLUTION_PATH: 'Exchange.API.csproj'
+  ACR_LOGIN_SERVER: 'fastxeacr.azurecr.io'
+
+jobs:
+  BuildAndScanApp:
+    name: 'Application Build and Security Scan'
+    # Configured for your self-hosted Windows agent
+    runs-on: [self-hosted, Windows, x64] 
+    
+    # Linked to your TST environment for Service Connections/Secrets
+    environment: TST
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          ref: main  # Explicitly using your 'main' branch
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.x'
+
+      - name: Restore Dependencies
+        run: dotnet restore ${{ env.DOTNET_SOLUTION_PATH }}
+
+      - name: Build Project
+        run: dotnet build ${{ env.DOTNET_SOLUTION_PATH }} --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
+
+      - name: Run Security Analysis
+        shell: pwsh
+        run: |
+          Write-Host "Starting Security Scan for your code..."
+          # Add your Trivy or Dependency Check commands here
+
+      - name: Cleanup Build Artifacts
+        shell: pwsh
+        run: |
+          Write-Host "Cleaning up local build artifacts (replacing docker prune)..."
+          if (Test-Path bin) { Remove-Item -Recurse -Force bin }
+          if (Test-Path obj) { Remove-Item -Recurse -Force obj }
