@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch: # Allows manual run if needed
 
 env:
   BUILD_CONFIGURATION: 'Release'
@@ -15,6 +16,7 @@ env:
 jobs:
   BuildAndScanApp:
     name: 'Application Build and Security Scan'
+    # Runs on your local machine: DESKTOP-BE1AC6Q
     runs-on: [self-hosted, Windows, x64] 
     
     environment: TST
@@ -25,10 +27,7 @@ jobs:
         with:
           ref: main
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.x' 
+      # Step removed: Setup .NET (Using the pre-installed version on your runner)
 
       - name: Restore Dependencies
         run: dotnet restore ${{ env.DOTNET_SOLUTION_PATH }}
