@@ -1,11 +1,11 @@
 name: CI Build & Security Scans
 
-# trigger: none (Manual trigger only)
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - main
 
 env:
-  # మీ వేరియబుల్స్ ఇక్కడ యాడ్ చేశాను
   BUILD_CONFIGURATION: 'Release'
   DOTNET_SOLUTION_PATH: 'Exchange.API.csproj'
   TRIVY_REPORT_DIR: '${{ github.workspace }}/TrivyReport'
@@ -15,17 +15,15 @@ env:
 jobs:
   BuildAndScanApp:
     name: 'Application Build and Security Scan'
-    # మీ సెల్ఫ్-హోస్టెడ్ విండోస్ ఏజెంట్
     runs-on: [self-hosted, Windows, x64] 
     
-    # మీ TST ఎన్విరాన్మెంట్
     environment: TST
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          ref: main # మీ బ్రాంచ్ పేరు
+          ref: main
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
